@@ -1,0 +1,6 @@
+# 模块示例
+# "iam": 用户服务
+# "iam.client": "客户端"
+# "iam.member-role-project": "角色分配"
+# "iam.role": "角色"
+# "iam.user-info": "用户信息维护"

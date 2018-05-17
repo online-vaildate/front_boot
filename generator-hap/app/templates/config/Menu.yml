@@ -1,0 +1,43 @@
+# 模块示例
+# "iam":
+#   icon: account_circle
+#   sort: 1
+#   global: 
+#     - "role":
+#         icon: assignment_ind
+#         Routes: /iam/role
+#         sort: 1
+#         permission:
+#           - 'hap-user-service.role.update'
+#           - 'hap-user-service.role.delete'
+#           - 'hap-user-service.role.select'
+#           - 'hap-user-service.role.updateRoleWithPermission'
+#           - 'hap-user-service.role.createRoleWithPermission'
+#   organization: 
+#     - "client":
+#         icon: laptop_mac
+#         Routes: /iam/client
+#         sort: 1
+#         permission:
+#           - 'hap-user-service.client.create'
+#           - 'hap-user-service.client.update'
+#           - 'hap-user-service.client.delete'
+#           - 'hap-user-service.client.select'
+#   project: 
+#     - "member-role-project":
+#         icon: person_add
+#         Routes: /iam/projectMemberRole
+#         sort: 1
+#         permission:
+#           - 'hap-user-service.member-role-project.create'
+#           - 'hap-user-service.member-role-project.delete'
+#           - 'hap-user-service.member-role-project.select'
+#           - 'hap-user-service.member-role-project.update'
+#   user: 
+#     - "user-info":
+#         icon: more
+#         Routes: /iam/user/info
+#         sort: 1
+#         permission:
+#           - 'hap-user-service.user-info.querySelf'
+#           - 'hap-user-service.user-info.updateSelf'

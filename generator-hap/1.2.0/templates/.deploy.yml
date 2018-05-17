@@ -1,0 +1,64 @@
+apiVersion: devops/v1alpha1
+kind: MicroServiceUI
+group: com.hand.hapcloud
+code: hapcloud-front
+name: hapcloud-front
+version: ${VERSION}
+image: registry.digital.saas.carllhw.com/hapcloud/hapcloud-front:${IMAEG_TAG}
+commit: ${COMMIT}
+
+
+resources:
+- name: gateway
+  type: url
+- name: userdb
+  type: mysql
+  
+services:
+- kind: MicroService
+  group: com.hand.hapcloud
+  code: hap-api-gateway
+  require: 1
+- kind: MicroService
+  group: com.hand.hapcloud
+  code: hap-user-service
+  require: 1
+- kind: MicroService
+  group: com.hand.hapcloud
+  code: hap-oauth-service
+  require: 1
+
+config:
+  port: 80
+
+stages:
+- name: 初始化配置
+  type: ScriptJob
+  description: "初始化配置信息"
+  config:
+    env:
+    - name: DB_HOST
+      value: "{{ userdb.HOST }}"
+    - name: DB_PORT
+      value: "{{ userdb.PORT }}"
+    - name: DB_USER
+      value: "{{ userdb.USERNAME }}"
+    - name: DB_PASS
+      value: "{{ userdb.PASSWORD }}"
+    - name: DB_NAME
+      value: "{{ userdb.SCHEMA }}"
+    scripts:
+    - 'cd /usr/share/nginx/html;'
+    - 'python pythonsql.py;'
+- name: 部署
+  type: Deploy
+  description: 部署当前服务
+  config:
+    env:
+    - name: PRO_API_HOST
+      value: "{{ gateway.HOST }}"
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 500Mi

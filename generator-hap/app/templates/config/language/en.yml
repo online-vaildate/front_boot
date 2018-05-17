@@ -1,0 +1,6 @@
+# 模块示例
+# "iam": IAM
+# "iam.client": "Client"
+# "iam.member-role-project": "Role Assignment"
+# "iam.role": "Role"
+# "iam.user-info": "User Information Maintenance"

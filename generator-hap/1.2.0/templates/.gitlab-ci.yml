@@ -1,0 +1,106 @@
+image: registry.saas.hand-china.com/tools/devops-ci:1.0.1
+
+stages:
+  - package
+  - build
+  - web-hook
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+node-build-feature:
+  image: registry.saas.hand-china.com/tools/pynode:test
+  stage: package
+  script:
+    - node_config
+    - node_module_ci
+    - node_dev_build
+  only:
+    - /^feature-.*$/
+
+node-build:
+  image: registry.saas.hand-china.com/tools/pynode:test
+  stage: package
+  script:
+    - node_config
+    - node_module_ci
+    - node_build
+    - node_dist
+  only:
+    - develop
+    - /^release-.*$/
+    - /^hotfix-.*$/
+    - tags
+
+docker-build:
+  stage: build
+  script:
+    - docker_build
+  only:
+    - develop
+    - /^release-.*$/
+    - /^hotfix-.*$/
+    - tags
+
+notification:
+  stage: web-hook
+  script:
+    - devops_ci_notification
+  only:
+    - develop
+    - /^release-.*$/
+    - /^hotfix-.*$/
+    - tags
+
+.auto_devops: &auto_devops |
+  export CI_TAG_SUF=$(echo $CI_COMMIT_REF_NAME | awk -F '-' '{print $1}')
+  export CI_TAG_PRE=$(echo $CI_COMMIT_REF_NAME | awk -F '-' '{print $2}')
+  export CI_COMMIT_TIME=$(git log -1 --pretty=format:"%ci" | awk '{print $1$2}' | sed 's/[-:]//g')
+  if [ ! $CI_TAG_PRE ]; then
+    export CI_APPLICATION_TAG=$CI_TAG_SUF.$CI_COMMIT_TIME
+  else
+    export CI_APPLICATION_TAG=$CI_TAG_PRE-beta.$CI_COMMIT_TIME.$CI_TAG_SUF
+  fi
+  if [ ! $CI_COMMIT_TAG ]; then
+    export CI_COMMIT_TAG=$CI_APPLICATION_TAG
+  fi
+
+  function node_config() {
+    npm config set registry http://nexus3.deploy.saas.hand-china.com/repository/handnpm/
+  }
+
+  function node_module_ci() {
+    mkdir /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/
+    python ./boot/structure/configAuto.py iam
+    cp -r config.yml /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/
+    chmod 777 ./boot/structure/npmci.sh && ./boot/structure/npmci.sh
+    cd boot
+  }
+
+  function node_dev_build() {
+    ./node_modules/.bin/gulp start
+    npm run devbuild
+  }
+
+  function node_build() {
+    ./node_modules/.bin/gulp start
+    npm run devbuild
+  }
+
+  function node_dist(){
+    # mkdir /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/
+    cp -r dist /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/dist
+  }
+
+  function docker_build() {
+    cp /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/config.yml config.yml
+    cp -r /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/dist dist
+    docker login -u $REGISTRY_USER -p $REGISTRY_PWD $REGISTRY_ADDRESS
+    docker build --pull -t $REGISTRY_ADDRESS/$PROJECT_NAME/$APPLICATION_NAME:$CI_COMMIT_TAG .
+    docker push $REGISTRY_ADDRESS/$PROJECT_NAME/$APPLICATION_NAME:$CI_COMMIT_TAG
+    rm -rf /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA
+    rm -rf /cache/$CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA/config.yml
+  }
+
+before_script:
+  - *auto_devops
